@@ -543,6 +543,8 @@ $("btn-gc").addEventListener("click", async ()=>{
 
 /* ══ 記法 → HTML ══════════════════════════════ */
 const esc = s => s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+// <!-- 〜 --> は版面・文字数・検証・書き出しのいずれからも除外する(原稿の保存・.mdはそのまま残す)
+const stripComments = s => s.replace(/<!--[\s\S]*?-->/g,"");
 function inline(s){
   // 逐語区間(インラインコード・数式)を先に退避し、以降の記法に巻き込まれないようにする
   const stash=[];
@@ -569,7 +571,7 @@ const cells = l => l.replace(/^\||\|\s*$/g,"").split("|").map(s=>s.trim());
 const alignOf = s => /^:-+:$/.test(s.trim()) ? "c" : (/^-+:$/.test(s.trim()) ? "r" : "");
 
 function build(text, opt){
-  const lines=text.replace(/\r\n?/g,"\n").split("\n");
+  const lines=stripComments(text).replace(/\r\n?/g,"\n").split("\n");
   const out=[]; let buf=[], figNo=0, tblNo=0, pendingCap=null;
   const flushP=()=>{
     if(!buf.length) return;
@@ -680,7 +682,7 @@ function build(text, opt){
   return out.join("") || '<p style="color:#9AA5B1">ここに版面どおりに表示されます</p>';
 }
 function plainLen(s){
-  return s.replace(/^#{1,6}\s+/gm,"").replace(/^>\s?/gm,"").replace(/^-{3,}$/gm,"")
+  return stripComments(s).replace(/^#{1,6}\s+/gm,"").replace(/^>\s?/gm,"").replace(/^-{3,}$/gm,"")
     .replace(/^!\[[^\]]*\]\([^)]*\).*$/gm,"").replace(/^\|.*\|$/gm,"").replace(/^\[表[:：].*\]$/gm,"")
     .replace(/^:::\w+(\[[^\]]*\])?\s*$/gm,"").replace(/^:::\s*$/gm,"")
     .replace(/^```.*$/gm,"").replace(/^\$\$\s*$/gm,"")
@@ -813,6 +815,7 @@ const ALLOWED_SPEAKERS=["かぐや","ヤチヨ","彩葉","ロボット"];
 const MAX_CHARS=20000;
 function validate(text){
   const warns=[];
+  text=stripComments(text);
   const lines=text.replace(/\r\n?/g,"\n").split("\n");
 
   let h1=0, h56=0;
@@ -990,7 +993,7 @@ function download(name, data, mime){
 
 // 記法を落とした素のテキスト
 function toPlain(text){
-  return text.replace(/\r\n?/g,"\n")
+  return stripComments(text).replace(/\r\n?/g,"\n")
     .replace(/^```(\S*)\s*$([\s\S]*?)^```\s*$/gm,(_,lang,body)=>body.replace(/^\n|\n$/g,""))
     .replace(/^:::note(?:\[([^\]]*)\])?\s*\n([\s\S]*?)\n:::\s*$/gm,(_,label,body)=>`［${label||"注意"}］\n${body}`)
     .replace(/^:::column(?:\[([^\]]*)\])?\s*\n([\s\S]*?)\n:::\s*$/gm,(_,label,body)=>`〈コラム：${label||""}〉\n${body}`)
